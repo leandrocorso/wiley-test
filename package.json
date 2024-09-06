@@ -17,6 +17,7 @@
     "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.7",
     "@reduxjs/toolkit": "^2.2.7",
+    "@uploadcare/file-uploader": "^1.6.0",
     "@uploadcare/upload-client": "^6.14.1",
     "axios": "^1.7.5",
     "react": "^18.3.1",
