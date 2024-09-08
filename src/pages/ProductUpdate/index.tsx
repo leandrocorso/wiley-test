@@ -3,11 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 // Form
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  productUpdateSchema,
-  ProductProps,
-  ProductUpdateProps,
-} from "@/types/productSchema";
+import { productUpdateSchema, ProductUpdateProps } from "@/types/productSchema";
 // Ui
 import {
   TextField,
@@ -24,9 +20,9 @@ import {
 } from "@mui/material";
 import { Loading } from "@/components/Loading";
 // Store
-import { AppDispatch, RootState } from "@/store/store";
+import { AppDispatch } from "@/store/store";
 import { useDispatch, useSelector } from "react-redux";
-import { getCategories } from "@/store/categoriesSlice";
+import { getCategories, selectCategories } from "@/store/categoriesSlice";
 import { showError, showSuccess } from "@/store/feedbackSlice";
 import {
   getProduct,
@@ -41,36 +37,29 @@ import { toDecimal } from "@/utils/toDecimal";
 export const ProductUpdate = (): ReactNode => {
   const navigate = useNavigate();
   const { id } = useParams();
-
   const [uploading, setUpload] = useState<boolean>(false);
-  const [current, setCurrent] = useState<ProductProps>();
+  const [selectedCategory, setCategory] = useState<string>("");
 
   const dispatch = useDispatch<AppDispatch>();
 
-  const categories = useSelector((state: RootState) => state.categories.data);
-  const {
-    loading,
-    error,
-    current: currentProduct,
-    data,
-  } = useSelector(selectProducts);
-
-  if (error) dispatch(showError(error));
+  const categories = useSelector(selectCategories);
 
   useEffect(() => {
     dispatch(getCategories());
-  }, []);
+  }, [dispatch]);
+
+  const { loading, error, current, data } = useSelector(selectProducts);
 
   useEffect(() => {
     if (id && data) {
       const productInStore = data.find((item) => item.id == id);
       if (productInStore) {
-        setCurrent(productInStore);
+        dispatch(setCurrentProduct(productInStore));
       } else {
-        dispatch(getProduct(id));
+        dispatch(getProduct(id as string));
       }
     }
-  }, [id, data, currentProduct, dispatch]);
+  }, [id, data, dispatch]);
 
   const {
     register,
@@ -108,71 +97,81 @@ export const ProductUpdate = (): ReactNode => {
     });
   };
 
-  if (current)
-    return (
-      <>
-        <h1>Update Product</h1>
-        {uploading && <Loading backdrop onClick={() => setUpload(false)} />}
+  if (categories.error) dispatch(showError(categories.error));
 
-        <form onSubmit={handleSubmit(handleSaveProduct)} autoComplete="off">
-          <input type="hidden" value={current.id} {...register("id")} />
+  if (error) dispatch(showError(error));
 
-          <Grid container item direction="column" spacing={4} md={4} sm={6}>
-            <Grid item>
-              <TextField
-                label="Title"
-                placeholder="Product name"
-                InputLabelProps={{ shrink: true, required: true }}
-                fullWidth
-                error={!!errors.title}
-                helperText={errors.title?.message}
-                disabled={uploading || loading || !current}
-                defaultValue={current.title}
-                {...register("title")}
-              />
-            </Grid>
+  if (loading) return <Loading backdrop />;
 
-            <Grid item>
-              <TextField
-                label="Price"
-                placeholder="0.00"
-                InputLabelProps={{ shrink: true, required: true }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">$</InputAdornment>
-                  ),
-                }}
-                fullWidth
-                error={!!errors.price}
-                helperText={errors.price?.message}
-                maxLength={12}
-                disabled={uploading || loading}
-                defaultValue={toDecimal(current.price.toString())}
-                {...register("price", {
-                  onChange: (e) => {
-                    const { value } = e.target;
-                    if (value.length <= 12) setValue("price", toDecimal(value));
-                  },
-                })}
-              />
-            </Grid>
+  if (!current || !id) return <h2>Product not found</h2>;
 
-            <Grid item>
-              <TextField
-                label="Description"
-                InputLabelProps={{ shrink: true, required: true }}
-                rows={3}
-                multiline
-                fullWidth
-                error={!!errors.description}
-                helperText={errors.description?.message}
-                disabled={uploading || loading}
-                defaultValue={current.description}
-                {...register("description")}
-              />
-            </Grid>
+  return (
+    <>
+      <h1>Update Product</h1>
 
-            <Grid item>
+      <form onSubmit={handleSubmit(handleSaveProduct)} autoComplete="off">
+        <input type="hidden" value={current.id} {...register("id")} />
+
+        <Grid container item direction="column" spacing={4} md={4} sm={6}>
+          <Grid item>
+            <TextField
+              label="Title"
+              placeholder="Product name"
+              InputLabelProps={{ shrink: true, required: true }}
+              fullWidth
+              error={!!errors.title}
+              helperText={errors.title?.message}
+              disabled={uploading || loading || !current}
+              defaultValue={current.title}
+              {...register("title")}
+            />
+          </Grid>
+
+          <Grid item>
+            <TextField
+              label="Price"
+              placeholder="0.00"
+              InputLabelProps={{ shrink: true, required: true }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">$</InputAdornment>
+                ),
+              }}
+              fullWidth
+              error={!!errors.price}
+              helperText={errors.price?.message}
+              maxLength={12}
+              disabled={uploading || loading}
+              defaultValue={toDecimal(current.price.toString())}
+              {...register("price", {
+                onChange: (e) => {
+                  const { value } = e.target;
+                  if (value.length <= 12) setValue("price", toDecimal(value));
+                },
+              })}
+            />
+          </Grid>
+
+          <Grid item>
+            <TextField
+              label="Description"
+              InputLabelProps={{ shrink: true, required: true }}
+              rows={3}
+              multiline
+              fullWidth
+              error={!!errors.description}
+              helperText={errors.description?.message}
+              disabled={uploading || loading}
+              defaultValue={current.description}
+              {...register("description")}
+            />
+          </Grid>
+
+          <Grid item>
+            {categories.error}
+            {categories.loading && "Loading categories"}
+
+            {!categories.error && !categories.loading && (
               <FormControl fullWidth error={!!errors.category}>
                 <InputLabel
                   id="categories"
@@ -184,12 +183,20 @@ export const ProductUpdate = (): ReactNode => {
                 </InputLabel>
                 <Select
                   labelId="categories"
-                  disabled={uploading || loading}
+                  disabled={
+                    uploading ||
+                    loading ||
+                    !!error ||
+                    categories.loading ||
+                    !!categories.error
+                  }
                   {...register("category")}
+                  value={selectedCategory || current.category}
                   defaultValue={current.category}
+                  onChange={(event) => setCategory(event.target.value)}
                 >
                   <MenuItem value="">None</MenuItem>
-                  {categories.map((item, index) => (
+                  {categories.data.map((item, index) => (
                     <MenuItem key={`category-${index}`} value={item}>
                       {item}
                     </MenuItem>
@@ -199,56 +206,57 @@ export const ProductUpdate = (): ReactNode => {
                   <FormHelperText>{errors.category?.message}</FormHelperText>
                 )}
               </FormControl>
-            </Grid>
-
-            {current.image && (
-              <>
-                <Grid item>
-                  <Card>
-                    <Box display="flex" justifyContent="center" sx={{ p: 1 }}>
-                      <img
-                        width={140}
-                        height="auto"
-                        src={current.image}
-                        alt={current.title}
-                      />
-                    </Box>
-                  </Card>
-                </Grid>
-                <input
-                  type="hidden"
-                  value={current.image}
-                  {...register("image")}
-                />
-              </>
             )}
-
-            <Grid item>
-              <TextField
-                type="file"
-                label="Image file"
-                inputProps={{ accept: "image/jpg, image/png" }}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                error={!!errors.imageFile}
-                helperText={errors.imageFile?.message}
-                disabled={uploading || loading}
-                {...register("imageFile")}
-              />
-            </Grid>
-
-            <Grid item>
-              <Button
-                variant="contained"
-                color="primary"
-                type="submit"
-                disabled={uploading || loading}
-              >
-                {uploading ? "Please wait" : `Update the product`}
-              </Button>
-            </Grid>
           </Grid>
-        </form>
-      </>
-    );
+
+          {current.image && (
+            <>
+              <Grid item>
+                <Card>
+                  <Box display="flex" justifyContent="center" sx={{ p: 1 }}>
+                    <img
+                      width={140}
+                      height="auto"
+                      src={current.image}
+                      alt={current.title}
+                    />
+                  </Box>
+                </Card>
+              </Grid>
+              <input
+                type="hidden"
+                value={current.image}
+                {...register("image")}
+              />
+            </>
+          )}
+
+          <Grid item>
+            <TextField
+              type="file"
+              label="Image file"
+              inputProps={{ accept: "image/jpg, image/png" }}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              error={!!errors.imageFile}
+              helperText={errors.imageFile?.message}
+              disabled={uploading || loading}
+              {...register("imageFile")}
+            />
+          </Grid>
+
+          <Grid item>
+            <Button
+              variant="contained"
+              color="primary"
+              type="submit"
+              disabled={uploading || loading}
+            >
+              {uploading ? "Please wait" : `Update the product`}
+            </Button>
+          </Grid>
+        </Grid>
+      </form>
+    </>
+  );
 };

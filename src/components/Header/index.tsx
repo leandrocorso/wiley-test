@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { AppBar, Drawer, Container, IconButton } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { Links, pages } from "./Links";
+import { Links } from "./Links";
+import { pages } from "./pages";
 import { Logo } from "../Logo";
 import { Link, useLocation } from "react-router-dom";
 

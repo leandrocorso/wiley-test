@@ -12,6 +12,7 @@ import {
   addProduct,
   editProduct,
   removeProduct,
+  ApiResponse,
 } from "@/services/fakeStore";
 
 // Definindo a interface do estado
@@ -30,13 +31,13 @@ const initialState: ProductsState = {
 };
 
 // Thunks
-export const getProducts = createAsyncThunk<ProductProps[], number | undefined>(
-  "products/getProducts",
-  async (limit: number | undefined) => {
-    const response = await fetchProducts(limit);
-    return response;
-  }
-);
+export const getProducts = createAsyncThunk<
+  ApiResponse<ProductProps[]>,
+  number | undefined
+>("products/getProducts", async (limit: number | undefined) => {
+  const response = await fetchProducts(limit);
+  return response;
+});
 
 export const getProduct = createAsyncThunk(
   "products/getProduct",
@@ -91,10 +92,13 @@ const productsSlice = createSlice({
       })
       .addCase(
         getProducts.fulfilled,
-        (state, action: PayloadAction<ProductProps[]>) => {
+        (state, action: PayloadAction<ApiResponse<ProductProps[]>>) => {
+          const { success, error, data } = action.payload;
           state.loading = initialState.loading;
-          state.data = action.payload;
-          state.error = initialState.error;
+          state.error = error || initialState.error;
+          if (success && data) {
+            state.data = data || [];
+          }
         }
       )
       .addCase(getProduct.pending, (state) => {
@@ -107,10 +111,13 @@ const productsSlice = createSlice({
       })
       .addCase(
         getProduct.fulfilled,
-        (state, action: PayloadAction<ProductProps>) => {
+        (state, action: PayloadAction<ApiResponse<ProductProps>>) => {
+          const { error, success, data } = action.payload;
           state.loading = initialState.loading;
-          state.current = action.payload;
-          state.error = initialState.error;
+          state.error = error || initialState.error;
+          if (data && success) {
+            state.current = data;
+          }
         }
       )
       .addCase(createProduct.pending, (state) => {
@@ -123,10 +130,13 @@ const productsSlice = createSlice({
       })
       .addCase(
         createProduct.fulfilled,
-        (state, action: PayloadAction<ProductProps>) => {
+        (state, action: PayloadAction<ApiResponse<ProductProps>>) => {
+          const { success, error, data } = action.payload;
           state.loading = initialState.loading;
-          state.data.push(action.payload);
-          state.error = initialState.error;
+          state.error = error || initialState.error;
+          if (success && data) {
+            state.data.push(data);
+          }
         }
       )
       .addCase(updateProduct.pending, (state) => {
@@ -139,13 +149,14 @@ const productsSlice = createSlice({
       })
       .addCase(
         updateProduct.fulfilled,
-        (state, action: PayloadAction<ProductProps>) => {
-          const index = state.data.findIndex(
-            (item) => item.id === action.payload.id
-          );
+        (state, action: PayloadAction<ApiResponse<ProductProps>>) => {
+          const { success, error, data } = action.payload;
           state.loading = initialState.loading;
-          state.data[index] = action.payload;
-          state.error = initialState.error;
+          state.error = error || initialState.error;
+          if (success && data) {
+            const index = state.data.findIndex((item) => item.id === data.id);
+            state.data[index] = data;
+          }
         }
       )
       .addCase(deleteProduct.pending, (state) => {
@@ -156,11 +167,17 @@ const productsSlice = createSlice({
         state.loading = initialState.loading;
         state.error = "Failure to delete product";
       })
-      .addCase(deleteProduct.fulfilled, (state, action) => {
-        state.loading = initialState.loading;
-        state.data = state.data.filter((item) => item.id !== action.payload.id);
-        state.error = initialState.error;
-      });
+      .addCase(
+        deleteProduct.fulfilled,
+        (state, action: PayloadAction<ApiResponse<ProductProps>>) => {
+          const { success, error, data } = action.payload;
+          state.loading = initialState.loading;
+          state.error = error || initialState.error;
+          if (success && data) {
+            state.data = state.data.filter((item) => item.id !== data.id);
+          }
+        }
+      );
   },
 });
 

@@ -33,11 +33,11 @@ export const ProductAdd = (): ReactNode => {
 
   const dispatch = useDispatch<AppDispatch>();
 
-  const { data: categories } = useSelector(selectCategories);
+  const categories = useSelector(selectCategories);
 
   useEffect(() => {
     dispatch(getCategories());
-  }, []);
+  }, [dispatch]);
 
   const {
     register,
@@ -77,9 +77,11 @@ export const ProductAdd = (): ReactNode => {
       });
   };
 
+  if (categories.error) dispatch(showError(categories.error));
+
   return (
     <>
-      {uploading && <Loading backdrop onClick={() => setUpload(false)} />}
+      {uploading && <Loading backdrop />}
       <h1>Add Product</h1>
 
       <form onSubmit={handleSubmit(handleSaveProduct)} autoComplete="off">
@@ -136,32 +138,39 @@ export const ProductAdd = (): ReactNode => {
           </Grid>
 
           <Grid item>
-            <FormControl fullWidth error={!!errors.category}>
-              <InputLabel
-                id="categories"
-                style={{ padding: "0 4px", background: "#fff" }}
-                shrink
-                required
-              >
-                Category
-              </InputLabel>
-              <Select
-                labelId="categories"
-                disabled={uploading}
-                defaultValue=""
-                {...register("category")}
-              >
-                <MenuItem value="">None</MenuItem>
-                {categories.map((item, index) => (
-                  <MenuItem key={`category-${index}`} value={item}>
-                    {item}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.category?.message && (
-                <FormHelperText>{errors.category?.message}</FormHelperText>
-              )}
-            </FormControl>
+            {categories.error}
+            {categories.loading && "Loading categories"}
+
+            {!categories.error && !categories.loading && (
+              <FormControl fullWidth error={!!errors.category}>
+                <InputLabel
+                  id="categories"
+                  style={{ padding: "0 4px", background: "#fff" }}
+                  shrink
+                  required
+                >
+                  Category
+                </InputLabel>
+                <Select
+                  labelId="categories"
+                  disabled={
+                    uploading || categories.loading || !!categories.error
+                  }
+                  defaultValue=""
+                  {...register("category")}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {categories.data.map((item, index) => (
+                    <MenuItem key={`category-${index}`} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.category?.message && (
+                  <FormHelperText>{errors.category?.message}</FormHelperText>
+                )}
+              </FormControl>
+            )}
           </Grid>
 
           <Grid item>

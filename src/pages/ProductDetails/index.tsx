@@ -14,6 +14,7 @@ import {
   getProduct,
   deleteProduct,
   selectProducts,
+  setCurrentProduct,
 } from "@/store/productSlice";
 
 import { showError, showSuccess } from "@/store/feedbackSlice";
@@ -21,37 +22,35 @@ import { useSelector, useDispatch } from "react-redux";
 import { Loading } from "@/components/Loading";
 import { Confirm } from "@/components/Confirm";
 import { LinkButton } from "@/components/LinkButton";
-import { ProductProps } from "@/types/productSchema";
 
 export const ProductDetails = (): ReactNode => {
   const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false);
-  const [current, setCurrent] = useState<ProductProps>();
 
   const dispatch = useDispatch<AppDispatch>();
   const {
     loading,
     error,
-    current: currentProduct,
-    data,
+    current: product,
+    data: products,
   } = useSelector(selectProducts);
 
   const { id } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (id && data && !deleteConfirm) {
-      const productInStore = data.find((item) => item.id == id);
+    if (id && products) {
+      const productInStore = products.find((item) => item.id == id);
       if (productInStore) {
-        setCurrent(productInStore);
+        dispatch(setCurrentProduct(productInStore));
       } else {
-        dispatch(getProduct(+id));
+        dispatch(getProduct(id as string));
       }
     }
-  }, [id, data, currentProduct, deleteConfirm, dispatch]);
+  }, [id, products, dispatch]);
 
   const handleDelete = () => {
     if (!id) {
-      dispatch(showError("Is not possible to delete a product withou #id"));
+      dispatch(showError("Is not possible to delete a product without #id"));
       return false;
     }
 
@@ -70,7 +69,7 @@ export const ProductDetails = (): ReactNode => {
 
   if (loading) return <Loading backdrop />;
 
-  if (!current) return <h2>Product not found</h2>;
+  if (!product || !id) return <h2>Product not found</h2>;
 
   return (
     <>
@@ -84,8 +83,8 @@ export const ProductDetails = (): ReactNode => {
         }}
       >
         <Box>
-          <h1>{current.title}</h1>
-          <h2>{current.category}</h2>
+          <h1>{product.title}</h1>
+          <h2>{product.category}</h2>
         </Box>
         <Box>
           <Box
@@ -139,16 +138,16 @@ export const ProductDetails = (): ReactNode => {
                 <CardMedia
                   component="img"
                   height="auto"
-                  image={current.image}
-                  alt={current.title}
+                  image={product.image}
+                  alt={product.title}
                 />
               </Card>
             </Box>
             <Box>
               <Typography variant="h6">Description</Typography>
-              <Typography>{current.description}</Typography>
+              <Typography>{product.description}</Typography>
               <Divider sx={{ mt: 2, mb: 2 }} />
-              <Typography variant="h6">${current.price}</Typography>
+              <Typography variant="h6">${product.price}</Typography>
             </Box>
           </Box>
         </Grid>

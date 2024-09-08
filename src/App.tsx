@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CssBaseline } from "@mui/material";
 
 import { Layout } from "@/pages/Layout";
-import { Products } from "@/pages/Products";
+import { ProductsList } from "@/pages/ProductsList";
 import { ProductAdd } from "@/pages/ProductAdd";
 import { ProductUpdate } from "@/pages/ProductUpdate";
 import { ProductDetails } from "@/pages/ProductDetails";
@@ -15,7 +15,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route path="" element={<Products />}></Route>
+            <Route path="" element={<ProductsList />}></Route>
             <Route path="add-product" element={<ProductAdd />}></Route>
             <Route path="edit-product/:id" element={<ProductUpdate />}></Route>
             <Route path="product/:id" element={<ProductDetails />}></Route>

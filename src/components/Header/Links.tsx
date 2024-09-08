@@ -1,16 +1,7 @@
 import { ReactNode } from "react";
 import { Tabs, TabsProps } from "@mui/material";
 import { LinkTab } from "./LinkTab";
-
-interface PagesProps {
-  path: string;
-  label: string;
-}
-
-export const pages: PagesProps[] = [
-  { path: "/", label: "Products" },
-  { path: "/add-product", label: "Add product" },
-];
+import { pages } from "./pages";
 
 export const Links = (props: TabsProps): ReactNode => (
   <Tabs {...props}>

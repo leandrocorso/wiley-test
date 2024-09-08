@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 
-import { fetchCategories } from "@/services/fakeStore";
+import { ApiResponse, fetchCategories } from "@/services/fakeStore";
 
 // Definindo a interface do estado
 interface CategoryState {
@@ -17,7 +17,7 @@ const initialState: CategoryState = {
 };
 
 // Thunks
-export const getCategories = createAsyncThunk<string[]>(
+export const getCategories = createAsyncThunk<ApiResponse<string[]>>(
   "categories/getCategories",
   async () => {
     const response = await fetchCategories();
@@ -42,10 +42,13 @@ const categoriesSlice = createSlice({
       })
       .addCase(
         getCategories.fulfilled,
-        (state, action: PayloadAction<string[]>) => {
+        (state, action: PayloadAction<ApiResponse<string[]>>) => {
+          const { success, error, data } = action.payload;
           state.loading = initialState.loading;
-          state.data = action.payload;
-          state.error = initialState.error;
+          state.error = error || initialState.error;
+          if (success) {
+            state.data = data || [];
+          }
         }
       );
   },

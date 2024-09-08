@@ -1,75 +1,104 @@
-import axios from "axios";
-import { ProductSchema, ProductUpdateProps } from "@/types/productSchema";
+import axios, { AxiosError, AxiosResponse } from "axios";
+import {
+  ProductProps,
+  ProductSchema,
+  ProductUpdateProps,
+} from "@/types/productSchema";
 
 const BASE_URL = "https://fakestoreapi.com";
 
-export interface PaginationProps {
-  page?: number;
-  limit?: number;
-}
-
-const responseNotOk = (because: string): Error => {
-  throw new Error(`Network response was not ok ${because}`);
+export type ApiResponse<T> = {
+  success: boolean;
+  error?: string;
+  data: T | null;
 };
 
-export const fetchProduct = async (id: number | string) => {
-  try {
-    const response = await axios.get(`${BASE_URL}/products/${id}`);
-    return response.data || responseNotOk("to get a product");
-  } catch (error) {
-    return error;
-  }
+const deliverResponse = (response: AxiosResponse) => {
+  return { success: true, data: response.data };
 };
 
-export const fetchProducts = async (limit: number | undefined) => {
-  try {
-    const response = await axios.get(`${BASE_URL}/products?limit=${limit}`);
-    return response.data || responseNotOk("to get the products");
-  } catch (error) {
-    return error;
-  }
+const deliverError = (error: AxiosError | string) => {
+  const errorMessage = axios.isAxiosError(error) ? error.message : error;
+  return {
+    success: false,
+    data: null,
+    error: errorMessage || "Unknown error occurred",
+  };
 };
 
-export const addProduct = async (product: ProductSchema) => {
-  try {
-    const response = await axios.post(`${BASE_URL}/products`, product, {
+export const fetchProduct = async (
+  id: number | string
+): Promise<ApiResponse<ProductProps>> => {
+  return axios
+    .get(`${BASE_URL}/products/${id}`)
+    .then((response) =>
+      response.data
+        ? deliverResponse(response)
+        : deliverError("Product not found")
+    )
+    .catch((error) => deliverError(error));
+};
+
+export const fetchProducts = async (
+  limit: number | undefined
+): Promise<ApiResponse<ProductProps[]>> => {
+  const limitQueryString = limit ? `?limit=${limit}` : "";
+  return axios
+    .get(`${BASE_URL}/products${limitQueryString}`)
+    .then((response) => deliverResponse(response))
+    .catch((error) => deliverError(error));
+};
+
+export const addProduct = async (
+  product: ProductSchema
+): Promise<ApiResponse<ProductProps>> => {
+  return axios
+    .post(`${BASE_URL}/products`, product, {
       headers: { "Content-Type": "application/json" },
-    });
-    return response.data || responseNotOk("to create a product");
-  } catch (error) {
-    return error;
-  }
+    })
+    .then((response) =>
+      response.data
+        ? deliverResponse(response)
+        : deliverError("Error on create product")
+    )
+    .catch((error) => deliverError(error));
 };
 
-export const editProduct = async (product: ProductUpdateProps) => {
-  try {
-    const response = await axios.put(
-      `${BASE_URL}/products/${product.id}`,
-      product,
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    return response.data || responseNotOk("to update a product");
-  } catch (error) {
-    return error;
-  }
+export const editProduct = async (
+  product: ProductUpdateProps
+): Promise<ApiResponse<ProductProps>> => {
+  return axios
+    .put(`${BASE_URL}/products/${product.id}`, product, {
+      headers: { "Content-Type": "application/json" },
+    })
+    .then((response) =>
+      response.data
+        ? deliverResponse(response)
+        : deliverError("Error on update product")
+    )
+    .catch((error) => deliverError(error));
 };
 
-export const removeProduct = async (id: number | string) => {
-  try {
-    const response = await axios.delete(`${BASE_URL}/products/${id}`);
-    return response.data || { id: +id };
-  } catch (error) {
-    return error;
-  }
+export const removeProduct = async (
+  id: number | string
+): Promise<ApiResponse<ProductProps>> => {
+  return axios
+    .delete(`${BASE_URL}/products/${id}`)
+    .then((response) =>
+      response.data
+        ? deliverResponse(response)
+        : deliverError("Error on delete product")
+    )
+    .catch((error) => deliverError(error));
 };
 
-export const fetchCategories = async () => {
-  try {
-    const response = await axios.get(`${BASE_URL}/products/categories`);
-    return response.data || responseNotOk("to get the categories");
-  } catch (error) {
-    return error;
-  }
+export const fetchCategories = async (): Promise<ApiResponse<string[]>> => {
+  return axios
+    .get(`${BASE_URL}/products/categories`)
+    .then((response) => {
+      return response.data
+        ? deliverResponse(response)
+        : deliverError("Categories not found");
+    })
+    .catch((error) => deliverError(error));
 };
