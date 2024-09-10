@@ -84,11 +84,7 @@ export const removeProduct = async (
 ): Promise<ApiResponse<ProductProps>> => {
   return axios
     .delete(`${BASE_URL}/products/${id}`)
-    .then((response) =>
-      response.data
-        ? deliverResponse(response)
-        : deliverError("Error on delete product")
-    )
+    .then(() => deliverResponse({ data: { id } } as AxiosResponse))
     .catch((error) => deliverError(error));
 };
 

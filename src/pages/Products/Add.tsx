@@ -1,9 +1,9 @@
 import { ReactNode, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 // Form
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { productUpdateSchema, ProductUpdateProps } from "@/types/productSchema";
+import { productSchema, ProductSchema } from "@/types/productSchema";
 // Ui
 import {
   TextField,
@@ -15,30 +15,21 @@ import {
   Button,
   MenuItem,
   FormHelperText,
-  Card,
-  Box,
 } from "@mui/material";
 import { Loading } from "@/components/Loading";
 // Store
-import { AppDispatch } from "@/store/store";
 import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "@/store/store";
 import { getCategories, selectCategories } from "@/store/categoriesSlice";
+import { createProduct, setCurrentProduct } from "@/store/productSlice";
 import { showError, showSuccess } from "@/store/feedbackSlice";
-import {
-  getProduct,
-  selectProducts,
-  setCurrentProduct,
-  updateProduct,
-} from "@/store/productSlice";
 // Utils
-import { uploadFiles } from "@/utils/uploadFiles";
 import { toDecimal } from "@/utils/toDecimal";
+import { uploadFiles } from "@/utils/uploadFiles";
 
-export const ProductUpdate = (): ReactNode => {
+export const Add = (): ReactNode => {
   const navigate = useNavigate();
-  const { id } = useParams();
   const [uploading, setUpload] = useState<boolean>(false);
-  const [selectedCategory, setCategory] = useState<string>("");
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -48,70 +39,52 @@ export const ProductUpdate = (): ReactNode => {
     dispatch(getCategories());
   }, [dispatch]);
 
-  const { loading, error, current, data } = useSelector(selectProducts);
-
-  useEffect(() => {
-    if (id && data) {
-      const productInStore = data.find((item) => item.id == id);
-      if (productInStore) {
-        dispatch(setCurrentProduct(productInStore));
-      } else {
-        dispatch(getProduct(id as string));
-      }
-    }
-  }, [id, data, dispatch]);
-
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-  } = useForm<ProductUpdateProps>({
-    resolver: zodResolver(productUpdateSchema),
+    reset,
+  } = useForm<ProductSchema>({
+    resolver: zodResolver(productSchema),
   });
 
-  const handleSaveProduct = async (formData: ProductUpdateProps) => {
-    if (!id && !formData) {
-      dispatch(
-        showError("Is not possible to save a product without #id or data")
-      );
+  const handleSaveProduct = async (formData: ProductSchema) => {
+    if (!formData) {
+      dispatch(showError("Is not possible to save a product without data"));
       return false;
     }
 
     setUpload(true);
 
-    Object.assign(formData, { id });
+    const image = await uploadFiles(formData.imageFile);
+    Object.assign(formData, { image });
 
-    if (formData.imageFile && formData.imageFile.length > 0) {
-      const image = await uploadFiles(formData.imageFile);
-      Object.assign(formData, { image });
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { imageFile, ...productToSave } = formData;
-
-    dispatch(updateProduct(formData)).then(() => {
-      setUpload(false);
-      dispatch(setCurrentProduct(productToSave));
-      dispatch(showSuccess("Product updated successfully"));
-      navigate("/");
-    });
+    dispatch(createProduct(formData))
+      .then(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { imageFile, ...savedProduct } = formData;
+        setUpload(false);
+        reset();
+        dispatch(setCurrentProduct(savedProduct));
+        dispatch(showSuccess("Product saved successfully"));
+        navigate("/");
+      })
+      .catch((error) => {
+        setUpload(false);
+        console.error(error);
+        dispatch(showError("Error saving product"));
+      });
   };
 
   if (categories.error) dispatch(showError(categories.error));
 
-  if (error) dispatch(showError(error));
-
-  if (loading) return <Loading backdrop />;
-
-  if (!current || !id) return <h2>Product not found</h2>;
-
   return (
     <>
-      <h1>Update Product</h1>
+      {uploading && <Loading backdrop />}
+      <h1>Add Product</h1>
 
       <form onSubmit={handleSubmit(handleSaveProduct)} autoComplete="off">
-        <input type="hidden" value={current.id} {...register("id")} />
-
         <Grid container item direction="column" spacing={4} md={4} sm={6}>
           <Grid item>
             <TextField
@@ -121,8 +94,7 @@ export const ProductUpdate = (): ReactNode => {
               fullWidth
               error={!!errors.title}
               helperText={errors.title?.message}
-              disabled={uploading || loading || !current}
-              defaultValue={current.title}
+              disabled={uploading}
               {...register("title")}
             />
           </Grid>
@@ -141,8 +113,7 @@ export const ProductUpdate = (): ReactNode => {
               error={!!errors.price}
               helperText={errors.price?.message}
               maxLength={12}
-              disabled={uploading || loading}
-              defaultValue={toDecimal(current.price.toString())}
+              disabled={uploading}
               {...register("price", {
                 onChange: (e) => {
                   const { value } = e.target;
@@ -161,8 +132,7 @@ export const ProductUpdate = (): ReactNode => {
               fullWidth
               error={!!errors.description}
               helperText={errors.description?.message}
-              disabled={uploading || loading}
-              defaultValue={current.description}
+              disabled={uploading}
               {...register("description")}
             />
           </Grid>
@@ -184,16 +154,10 @@ export const ProductUpdate = (): ReactNode => {
                 <Select
                   labelId="categories"
                   disabled={
-                    uploading ||
-                    loading ||
-                    !!error ||
-                    categories.loading ||
-                    !!categories.error
+                    uploading || categories.loading || !!categories.error
                   }
+                  defaultValue=""
                   {...register("category")}
-                  value={selectedCategory || current.category}
-                  defaultValue={current.category}
-                  onChange={(event) => setCategory(event.target.value)}
                 >
                   <MenuItem value="">None</MenuItem>
                   {categories.data.map((item, index) => (
@@ -209,38 +173,16 @@ export const ProductUpdate = (): ReactNode => {
             )}
           </Grid>
 
-          {current.image && (
-            <>
-              <Grid item>
-                <Card>
-                  <Box display="flex" justifyContent="center" sx={{ p: 1 }}>
-                    <img
-                      width={140}
-                      height="auto"
-                      src={current.image}
-                      alt={current.title}
-                    />
-                  </Box>
-                </Card>
-              </Grid>
-              <input
-                type="hidden"
-                value={current.image}
-                {...register("image")}
-              />
-            </>
-          )}
-
           <Grid item>
             <TextField
               type="file"
               label="Image file"
               inputProps={{ accept: "image/jpg, image/png" }}
-              InputLabelProps={{ shrink: true }}
+              InputLabelProps={{ shrink: true, required: true }}
               fullWidth
               error={!!errors.imageFile}
               helperText={errors.imageFile?.message}
-              disabled={uploading || loading}
+              disabled={uploading}
               {...register("imageFile")}
             />
           </Grid>
@@ -250,9 +192,9 @@ export const ProductUpdate = (): ReactNode => {
               variant="contained"
               color="primary"
               type="submit"
-              disabled={uploading || loading}
+              disabled={uploading}
             >
-              {uploading ? "Please wait" : `Update the product`}
+              {uploading ? "Please wait" : `Save the product`}
             </Button>
           </Grid>
         </Grid>

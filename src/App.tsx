@@ -2,10 +2,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CssBaseline } from "@mui/material";
 
 import { Layout } from "@/pages/Layout";
-import { ProductsList } from "@/pages/ProductsList";
-import { ProductAdd } from "@/pages/ProductAdd";
-import { ProductUpdate } from "@/pages/ProductUpdate";
-import { ProductDetails } from "@/pages/ProductDetails";
+import { List } from "@/pages/Products/List";
+import { Add } from "@/pages/Products/Add";
+import { Update } from "@/pages/Products/Update";
+import { Details } from "@/pages/Products/Details";
 import { NotFound } from "@/pages/NotFound";
 
 function App() {
@@ -15,10 +15,10 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route path="" element={<ProductsList />}></Route>
-            <Route path="add-product" element={<ProductAdd />}></Route>
-            <Route path="edit-product/:id" element={<ProductUpdate />}></Route>
-            <Route path="product/:id" element={<ProductDetails />}></Route>
+            <Route path="" element={<List />}></Route>
+            <Route path="add-product" element={<Add />}></Route>
+            <Route path="edit-product/:id" element={<Update />}></Route>
+            <Route path="product/:id" element={<Details />}></Route>
             <Route path="*" element={<NotFound />}></Route>
           </Route>
         </Routes>

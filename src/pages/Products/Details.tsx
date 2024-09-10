@@ -23,7 +23,7 @@ import { Loading } from "@/components/Loading";
 import { Confirm } from "@/components/Confirm";
 import { LinkButton } from "@/components/LinkButton";
 
-export const ProductDetails = (): ReactNode => {
+export const Details = (): ReactNode => {
   const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false);
 
   const dispatch = useDispatch<AppDispatch>();

@@ -11,7 +11,7 @@ import { ApiResponse } from "@/services/fakeStore";
 
 const LazyProduct = lazy(() => import("@/components/Product"));
 
-export const ProductsList = () => {
+export const List = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const { loading, error, data } = useSelector(selectProducts);

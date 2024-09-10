@@ -174,7 +174,7 @@ const productsSlice = createSlice({
           state.loading = initialState.loading;
           state.error = error || initialState.error;
           if (success && data) {
-            state.data = state.data.filter((item) => item.id !== data.id);
+            state.data = state.data.filter((item) => item.id != data.id);
           }
         }
       );
