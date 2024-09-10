@@ -38,7 +38,7 @@ export const Details = (): ReactNode => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (id && products) {
+    if (id && products && !deleteConfirm) {
       const productInStore = products.find((item) => item.id == id);
       if (productInStore) {
         dispatch(setCurrentProduct(productInStore));
@@ -46,7 +46,7 @@ export const Details = (): ReactNode => {
         dispatch(getProduct(id as string));
       }
     }
-  }, [id, products, dispatch]);
+  }, [id, products, deleteConfirm, dispatch]);
 
   const handleDelete = () => {
     if (!id) {
